@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>เกมลากอักษร — Levels 1-100</title>
+  <style>
+    :root{
+      --bg:#e7a0c4;
+      --card:#f06edb;
+      --accent:#ff6b6b;
+      --muted:#6b6b6b;
+      --glass: rgba(255,255,255,0.7);
+    }
+    *{box-sizing:border-box;font-family: 'Helvetica Neue', Arial, sans-serif}
+    body{margin:0;background:linear-gradient(120deg,#c218d2 0%, #140f14 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+    .app{width:1100px;max-width:100%;background:var(--card);border-radius:20px;box-shadow:0 10px 30px rgba(22,22,70,0.08);overflow:hidden;display:grid;grid-template-columns:320px 1fr}
+    header{padding:20px;border-bottom:1px solid rgba(0,0,0,0.04);display:flex;align-items:center;gap:12px}
+    .sidebar{padding:20px;background:linear-gradient(180deg,#fff 0,#fff0);min-height:520px}
+    .logo{font-weight:700;color:#222;display:flex;align-items:center;gap:10px}
+    .logo .dot{width:14px;height:14px;border-radius:50%;background:linear-gradient(45deg,#ff9a9e,#f6f1ff)}
+    .stats{margin-top:18px}
+    .stat{background:linear-gradient(90deg,#fff,#c67fd3);padding:12px;border-radius:12px;margin-bottom:10px;box-shadow:0 4px 10px rgba(26,26,50,0.04)}
+    .stat b{display:block;font-size:18px}
+    .levels-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px}
+    .level-btn{padding:8px;border-radius:8px;background:linear-gradient(180deg,#fff,#fffbf3);text-align:center;cursor:pointer;border:1px solid rgba(0,0,0,0.04)}
+    .level-btn.locked{opacity:0.32;cursor:not-allowed;background:linear-gradient(180deg,#f2f2f2,#f9f9f9)}
+    .play-area{padding:28px}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .level-indicator{font-size:20px;font-weight:700}
+    .controls{display:flex;gap:8px}
+    button{background:linear-gradient(90deg,#fff,#fff9ff);padding:10px 14px;border-radius:10px;border:1px solid rgba(0,0,0,0.06);cursor:pointer}
+    .btn-primary{background:linear-gradient(90deg,#7b61ff,#ff61a1);color:#fff;border:none}
+    .board{margin-top:22px;border-radius:14px;padding:18px;background:linear-gradient(180deg,#fff,#fbfbfb);box-shadow:inset 0 1px 0 rgba(255,255,255,0.6)}
+    .slots{display:flex;gap:8px;flex-wrap:wrap;min-height:64px;align-items:center}
+    .slot{width:48px;height:48px;border-radius:10px;border:2px dashed rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:center;font-weight:700;background:var(--glass)}
+    .tile{display:inline-flex;align-items:center;justify-content:center;min-width:48px;height:48px;padding:6px;border-radius:10px;margin:6px;font-weight:800;cursor:grab;user-select:none;border:2px solid rgba(0,0,0,0.06);box-shadow:0 6px 18px rgba(43,43,77,0.06)}
+    .tiles-wrap{margin-top:14px;display:flex;flex-wrap:wrap;gap:10px}
+    .progress{height:12px;background:rgba(0,0,0,0.06);border-radius:999px;overflow:hidden;margin-top:12px}
+    .progress > div{height:100%;width:0%;background:linear-gradient(90deg,#a78bfa,#fb7185)}
+    .footer{margin-top:18px;display:flex;align-items:center;justify-content:space-between}
+    .small{font-size:13px;color:var(--muted)}
+    .result{font-size:18px;font-weight:700}
+    .reveal-btn{background:linear-gradient(90deg,#f6f4f5,#ffffff);padding:8px;border-radius:8px}
+    .center{display:flex;align-items:center;justify-content:center}
+    @media(max-width:900px){.app{grid-template-columns:1fr} .sidebar{display:none}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="sidebar">
+      <div class="logo"><span class="dot"></span><div>เกมลากอักษร</div></div>
+      <div class="stats">
+        <div class="stat"><b id="score">คะแนน: 0</b><div class="small">คะแนนรวมถูกต้อง (สูงสุด 100)</div></div>
+        <div class="stat"><b id="completed">ผ่านแล้ว: 0 / 100</b><div class="small">ปลดล็อกด่านถัดไปเสมอ</div></div>
+        <div class="stat"><b id="currentWord">คำปัจจุบัน: -</b><div class="small">ความยาวคำจะเปลี่ยนไปเพื่อความสนุก</div></div>
+      </div>
+      <div class="small" style="margin-top:6px">เลือกด่าน:</div>
+      <div class="levels-grid" id="levelsGrid"></div>
+      <div style="margin-top:12px" class="small">Tip: ลากตัวอักษรไปวางในช่อง แล้วกด "ตรวจคำ"</div>
+    </div>
+
+    <div class="play-area">
+      <div class="topbar">
+        <div class="level-indicator">Level <span id="levelNumber">1</span></div>
+        <div class="controls">
+          <button id="btnShowAnswer" class="reveal-btn">เฉลยทีละตัว</button>
+          <button id="btnCheck" class="btn-primary">ตรวจคำ</button>
+        </div>
+      </div>
+
+      <div class="board">
+        <div class="center"><div style="font-size:14px;opacity:0.8" id="instruction">ลากตัวอักษรลงในช่องให้ได้คำที่ถูกต้อง</div></div>
+        <div class="slots" id="slotContainer" style="margin-top:16px"></div>
+        <div class="tiles-wrap" id="tilesContainer"></div>
+
+        <div class="footer">
+          <div class="progress" style="flex:1;margin-right:12px"><div id="progressBar"></div></div>
+          <div class="result">
+            <span id="levelResult">---</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;display:flex;gap:8px;align-items:center">
+        <button id="prevLevel">กลับ</button>
+        <button id="nextLevel">ด่านถัดไป</button>
+        <button id="restartLevel">เริ่มใหม่</button>
+        <div style="margin-left:auto" class="small">Progress: <span id="progressText">0%</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // Simple word list (100 simple words). You can customize these to Thai words if you prefer.
+    const words = [
+      "apple","ball","cat","dog","egg","fish","goat","hat","ice","jet",
+      "kite","leaf","moon","nest","owl","pen","queen","rain","sun","tree",
+      "umbrella","vase","wind","xray","yarn","zebra","green","brown","happy","smile",
+      "light","dark","cloud","river","mountain","flower","piano","guitar","movie","mouse",
+      "school","teacher","river","island","friend","family","butter","cookie","castle","window",
+      "garden","planet","rocket","camera","market","coffee","banana","orange","purple","yellow",
+      "silver","golden","mirror","bridge","island","planet","ocean","desert","forest","valley",
+      "ticket","ticket","planet","dragon","flower","dragonfly","butterfly","diamond","marshall","random",
+      "simple","complex","record","puzzle","answer","memory","banana","candle","ladder","bubble"
+    ];
+
+    // Ensure we have 100 items; if less, repeat from start
+    while(words.length < 100){ words.push(...words.slice(0,100-words.length)); }
+    words.length = 100;
+
+    // Game state
+    let level = 1;
+    let score = 0;
+    let completed = 0;
+    let unlocked = 1; // how many levels unlocked (always increases)
+    let revealIndex = 0; // for reveal one-by-one
+
+    const scoreEl = document.getElementById('score');
+    const completedEl = document.getElementById('completed');
+    const levelNumberEl = document.getElementById('levelNumber');
+    const slotContainer = document.getElementById('slotContainer');
+    const tilesContainer = document.getElementById('tilesContainer');
+    const btnCheck = document.getElementById('btnCheck');
+    const btnShowAnswer = document.getElementById('btnShowAnswer');
+    const levelResult = document.getElementById('levelResult');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    const levelsGrid = document.getElementById('levelsGrid');
+    const currentWordEl = document.getElementById('currentWord');
+
+    function initLevelsGrid(){
+      levelsGrid.innerHTML = '';
+      for(let i=1;i<=100;i++){
+        const b = document.createElement('div');
+        b.className = 'level-btn'+(i>unlocked? ' locked':'');
+        b.textContent = i;
+        b.addEventListener('click', ()=>{
+          if(i<=unlocked){ goToLevel(i); }
+        });
+        levelsGrid.appendChild(b);
+      }
+    }
+
+    function scrambleWord(w){
+      const arr = w.split('');
+      for(let i=arr.length-1;i>0;i--){
+        const j = Math.floor(Math.random()*(i+1));
+        [arr[i],arr[j]]=[arr[j],arr[i]];
+      }
+      // if scramble equals original, reshuffle once
+      if(arr.join('') === w) return scrambleWord(w);
+      return arr.join('');
+    }
+
+    function renderLevel(){
+      levelNumberEl.textContent = level;
+      levelResult.textContent = '---';
+      revealIndex = 0;
+      const word = words[level-1].toLowerCase();
+      currentWordEl.textContent = `คำปัจจุบัน: (${word.length} ตัว) `;
+
+      // create slots
+      slotContainer.innerHTML = '';
+      for(let i=0;i<word.length;i++){
+        const s = document.createElement('div');
+        s.className = 'slot';
+        s.dataset.index = i;
+        s.dataset.letter = '';
+        s.addEventListener('dragover', ev=>ev.preventDefault());
+        s.addEventListener('drop', onDropToSlot);
+        slotContainer.appendChild(s);
+      }
+
+      // create tiles scrambled
+      const scrambled = scrambleWord(word).split('');
+      tilesContainer.innerHTML = '';
+      scrambled.forEach((ch, i)=>{
+        const t = document.createElement('div');
+        t.className = 'tile';
+        t.draggable = true;
+        t.textContent = ch;
+        t.dataset.letter = ch;
+        t.addEventListener('dragstart', onDragStart);
+        t.addEventListener('click', ()=>{
+          // click to auto place into next empty slot
+          const empt = Array.from(slotContainer.children).find(s=>!s.dataset.letter);
+          if(empt){ placeLetterIntoSlot(t.dataset.letter, empt); t.style.visibility='hidden'; }
+        });
+        tilesContainer.appendChild(t);
+      });
+
+      updateProgress();
+      initLevelsGrid();
+    }
+
+    function onDragStart(e){
+      e.dataTransfer.setData('text/plain', e.target.dataset.letter);
+      // store id via index-like
+      e.dataTransfer.setData('text/html', e.target.outerHTML);
+      // mark source to hide when placed
+      e.target.classList.add('dragging');
+    }
+
+    function onDropToSlot(e){
+      e.preventDefault();
+      const letter = e.dataTransfer.getData('text/plain');
+      const slot = e.currentTarget;
+      placeLetterIntoSlot(letter, slot);
+      // hide one tile instance with same letter
+      const tiles = Array.from(tilesContainer.children).filter(t=>t.dataset.letter===letter && t.style.visibility!=='hidden');
+      if(tiles.length>0){ tiles[0].style.visibility='hidden'; }
+    }
+
+    function placeLetterIntoSlot(letter, slot){
+      slot.textContent = letter;
+      slot.dataset.letter = letter;
+    }
+
+    btnCheck.addEventListener('click', ()=>{
+      const word = words[level-1].toLowerCase();
+      const answer = Array.from(slotContainer.children).map(s=>s.dataset.letter||'').join('');
+      let correct = (answer === word);
+      if(correct){
+        score += 1;
+        levelResult.textContent = 'ถูกต้อง +1 คะแนน 🎉';
+      } else {
+        levelResult.textContent = `ผิด — คำที่ถูกต้องคือ "${word}"`;
+      }
+      completed += 1;
+      unlocked = Math.max(unlocked, level+1);
+      updateStats();
+      initLevelsGrid();
+      // auto-advance to next level but allow user to press next if they'd like
+      if(level < 100){
+        setTimeout(()=>{ goToLevel(level+1); }, 600);
+      } else {
+        // finished all levels
+        showFinal();
+      }
+    });
+
+    btnShowAnswer.addEventListener('click', ()=>{
+      const word = words[level-1].toLowerCase();
+      if(revealIndex < word.length){
+        // reveal next letter into its correct slot
+        const targetSlot = slotContainer.children[revealIndex];
+        targetSlot.textContent = word[revealIndex];
+        targetSlot.dataset.letter = word[revealIndex];
+        // hide one matching tile if exists
+        const tile = Array.from(tilesContainer.children).find(t=>t.dataset.letter===word[revealIndex] && t.style.visibility!=='hidden');
+        if(tile) tile.style.visibility='hidden';
+        revealIndex++;
+      }
+    });
+
+    function updateStats(){
+      scoreEl.textContent = `คะแนน: ${score}`;
+      completedEl.textContent = `ผ่านแล้ว: ${completed} / 100`;
+      updateProgress();
+    }
+
+    function updateProgress(){
+      const pct = Math.round((completed/100)*100);
+      progressBar.style.width = pct + '%';
+      progressText.textContent = pct + '%';
+    }
+
+    function goToLevel(n){
+      level = Math.max(1, Math.min(100, n));
+      renderLevel();
+      updateUIForLevel();
+    }
+
+    document.getElementById('nextLevel').addEventListener('click', ()=>{
+      if(level<100) goToLevel(level+1);
+    });
+    document.getElementById('prevLevel').addEventListener('click', ()=>{
+      if(level>1) goToLevel(level-1);
+    });
+    document.getElementById('restartLevel').addEventListener('click', ()=>{
+      renderLevel();
+    });
+
+    function updateUIForLevel(){
+      levelNumberEl.textContent = level;
+    }
+
+    function showFinal(){
+      alert(`จบเกม! คะแนนรวมที่ได้: ${score}/100`);
+    }
+
+    // init
+    initLevelsGrid();
+    goToLevel(1);
+  </script>
+</body>
+</html>
